@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Метеостанция - Улица и Помещение</title>
+  <title>Метеостанция ESP8266</title>
   <style>
     :root {
       --outdoor-color: #4285F4;
       --indoor-color: #EA4335;
+      --weather-color: #FBBC05;
       --card-bg: #ffffff;
       --text-dark: #333333;
       --text-light: #666666;
@@ -41,28 +42,20 @@
       font-weight: 600;
     }
     
-    .card-header.outdoor {
-      color: var(--outdoor-color);
-    }
+    .outdoor-header { color: var(--outdoor-color); }
+    .indoor-header { color: var(--indoor-color); }
+    .weather-header { color: var(--weather-color); }
     
-    .card-header.indoor {
-      color: var(--indoor-color);
-    }
-    
-    .card-header-icon {
+    .card-icon {
       width: 16px;
       height: 16px;
       border-radius: 50%;
       margin-right: 10px;
     }
     
-    .outdoor .card-header-icon {
-      background: var(--outdoor-color);
-    }
-    
-    .indoor .card-header-icon {
-      background: var(--indoor-color);
-    }
+    .outdoor-icon { background: var(--outdoor-color); }
+    .indoor-icon { background: var(--indoor-color); }
+    .weather-icon { background: var(--weather-color); }
     
     .sensor-row {
       display: flex;
@@ -87,6 +80,13 @@
     .hum-value { color: #1e88e5; }
     .pres-value { color: #43a047; }
     .wind-value { color: #7b1fa2; }
+    .weather-value { color: var(--weather-color); }
+    
+    .weather-icon-large {
+      font-size: 48px;
+      text-align: center;
+      margin: 15px 0;
+    }
     
     .update-time {
       font-size: 12px;
@@ -109,11 +109,28 @@
 </head>
 <body>
   <div class="dashboard">
+    <!-- Секция погоды -->
+    <div class="sensor-card">
+      <div class="card-header weather-header">
+        <div class="card-icon weather-icon"></div>
+        <span>Погода сейчас</span>
+      </div>
+      
+      <div class="weather-icon-large" id="weather-icon">☀️</div>
+      
+      <div class="sensor-row">
+        <span class="sensor-label">Состояние</span>
+        <span id="weather-text" class="sensor-value weather-value">--</span>
+      </div>
+      
+      <div id="weather-time" class="update-time"></div>
+    </div>
+    
     <!-- Уличные датчики -->
-    <div class="sensor-card outdoor">
-      <div class="card-header outdoor">
-        <div class="card-header-icon"></div>
-        <span>Улица</span>
+    <div class="sensor-card">
+      <div class="card-header outdoor-header">
+        <div class="card-icon outdoor-icon"></div>
+        <span>Уличные датчики</span>
       </div>
       
       <div class="sensor-row">
@@ -140,10 +157,10 @@
     </div>
     
     <!-- Комнатные датчики -->
-    <div class="sensor-card indoor">
-      <div class="card-header indoor">
-        <div class="card-header-icon"></div>
-        <span>Помещение</span>
+    <div class="sensor-card">
+      <div class="card-header indoor-header">
+        <div class="card-icon indoor-icon"></div>
+        <span>Комнатные датчики</span>
       </div>
       
       <div class="sensor-row">
@@ -158,106 +175,91 @@
       
       <div id="in-time" class="update-time"></div>
     </div>
-    <div class="sensor-card">
-  <div class="card-header weather-header">
-    <div class="card-icon weather-icon"></div>
-    <span>Погода</span>
   </div>
-  
-  <div class="sensor-row">
-    <span class="sensor-label">На улице будет</span>
-    <span id="weather-text" class="sensor-value weather-value">--</span>
-  </div>
-  
-  <div id="weather-time" class="update-time"></div>
-</div>
-  </div>
-  
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
 
   <script>
-    const API_URL = 'https://weth-esp.matvejkotenko87.workers.dev/api/data';
-    const UPDATE_INTERVAL = 30000; // 30 секунд
+    // Инициализация Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCzX29wtGTvSM5slyqqdGtpcbeZUzUjfrU",
+  authDomain: "weather-station-dce51.firebaseapp.com",
+  databaseURL: "https://weather-station-dce51-default-rtdb.firebaseio.com",
+  projectId: "weather-station-dce51",
+  storageBucket: "weather-station-dce51.firebasestorage.app",
+  messagingSenderId: "853096112287",
+  appId: "1:853096112287:web:fb5e84c9ff5f9f24cf02aa",
+    };
     
-    // Загрузка данных
-    async function fetchData() {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Ошибка сети');
-        
-        const data = await response.json();
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Соответствие погодных условий и иконок
+    const WEATHER_ICONS = {
+      'солнечно': '☀️',
+      'облачно': '☁️',
+      'дождь': '🌧️',
+      'гроза': '⛈️',
+      'снег': '❄️',
+      'туман': '🌫️',
+      'ветрено': '🌬️'
+    };
+
+    // Получение данных в реальном времени
+    function initRealTimeUpdates() {
+      database.ref('/').on('value', (snapshot) => {
+        const data = snapshot.val();
         updateDisplay(data);
-        
-        // Сохраняем данные в localStorage
-        localStorage.setItem('sensorData', JSON.stringify(data));
-      } catch (error) {
-        console.error('Ошибка:', error);
-        loadCachedData();
-      }
+      });
     }
-    
-    // Загрузка сохранённых данных
-    function loadCachedData() {
-      const cachedData = localStorage.getItem('sensorData');
-      if (cachedData) {
-        updateDisplay(JSON.parse(cachedData));
+
+    // Обновление интерфейса
+    function updateDisplay(data) {
+      console.log("New data:", data);
+      
+      // Уличные данные
+      if (data.outdoor) {
+        updateValue('out-temp', data.outdoor.temp, '°C');
+        updateValue('out-hum', data.outdoor.hum, '%');
+        updateValue('out-pres', data.outdoor.pres, 'hPa');
+        updateValue('out-wind', data.outdoor.wind, 'м/с');
+      }
+      
+      // Комнатные данные
+      if (data.indoor) {
+        updateValue('in-temp', data.indoor.temp, '°C');
+        updateValue('in-hum', data.indoor.hum, '%');
+      }
+      
+      // Погода
+      if (data.weather) {
+        const weatherText = data.weather.text || "нет данных";
+        document.getElementById('weather-text').textContent = weatherText;
+        document.getElementById('weather-icon').textContent = 
+          WEATHER_ICONS[weatherText.toLowerCase()] || '❓';
+      }
+      
+      // Время обновления
+      if (data.last_updated) {
+        const date = new Date(data.last_updated * 1000);
+        const timeString = date.toLocaleTimeString('ru-RU');
         document.querySelectorAll('.update-time').forEach(el => {
-          el.textContent += '';
+          el.textContent = `Обновлено: ${timeString}`;
         });
       }
     }
     
-    // Обновление интерфейса
-    function updateDisplay(data) {
-  console.log("Received data:", data); // Важно для отладки
-  
-  // Уличные данные
-  if (data.outdoor) {
-    setValue('out-temp', data.outdoor.temp, '°C');
-    setValue('out-hum', data.outdoor.hum, '%');
-    setValue('out-pres', data.outdoor.pres, ' мм.рт.ст');
-    setValue('out-wind', data.outdoor.wind, ' м/с');
-    setTime('out-time', data.outdoor.updated);
-  }
-
-  // Комнатные данные
-  if (data.indoor) {
-    setValue('in-temp', data.indoor.temp, ' °C');
-    setValue('in-hum', data.indoor.hum, ' %');
-    setTime('in-time', data.indoor.updated);
-  }
-}
-
-function setValue(elementId, value, unit) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.textContent = value !== null ? value.toFixed(1) + unit : '--';
-  } else {
-    console.error("Element not found:", elementId);
-  }
-}
-
-function setTime(elementId, timestamp) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.textContent = timestamp ? `Обновлено: ${formatTime(timestamp)}` : '';
-  }
-}
-    // Форматирование времени
-    function formatTime(timestamp) {
-      const date = new Date(timestamp);
-      return date.toLocaleString('ru-RU', {
-        hour: '2-digit',
-        minute: '2-digit'
-        
-      });
+    function updateValue(elementId, value, unit) {
+      const element = document.getElementById(elementId);
+      if (element && value !== null && value !== undefined) {
+        element.textContent = value.toFixed(1) + (unit || '');
+      }
     }
-    
-    // Инициализация
-    loadCachedData(); // Сразу показываем кешированные данные
-    fetchData();      // Запрашиваем свежие данные
-    
-    // Автообновление
-    setInterval(fetchData, UPDATE_INTERVAL);
+
+    // Запуск при загрузке
+    initRealTimeUpdates();
   </script>
 </body>
 </html>
