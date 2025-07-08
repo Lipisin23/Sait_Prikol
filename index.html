@@ -194,41 +194,40 @@
     
     // Обновление интерфейса
     function updateDisplay(data) {
-      // Уличные данные
-      if (data.outdoor) {
-        document.getElementById('out-temp').textContent = 
-          data.outdoor.temp !== null ? `${data.outdoor.temp.toFixed(1)}°C` : '--';
-        
-        document.getElementById('out-hum').textContent = 
-          data.outdoor.hum !== null ? `${data.outdoor.hum.toFixed(1)}%` : '--';
-        
-        document.getElementById('out-pres').textContent = 
-          data.outdoor.pres !== null ? `${data.outdoor.pres.toFixed(0)} hPa` : '--';
-        
-        document.getElementById('out-wind').textContent = 
-          data.outdoor.wind !== null ? `${data.outdoor.wind.toFixed(1)} м/с` : '--';
-        
-        if (data.outdoor.updated) {
-          document.getElementById('out-time').textContent = 
-            `Обновлено: ${formatTime(data.outdoor.updated)}`;
-        }
-      }
-      
-      // Комнатные данные
-      if (data.indoor) {
-        document.getElementById('in-temp').textContent = 
-          data.indoor.temp !== null ? `${data.indoor.temp.toFixed(1)}°C` : '--';
-        
-        document.getElementById('in-hum').textContent = 
-          data.indoor.hum !== null ? `${data.indoor.hum.toFixed(1)}%` : '--';
-        
-        if (data.indoor.updated) {
-          document.getElementById('in-time').textContent = 
-            `Обновлено: ${formatTime(data.indoor.updated)}`;
-        }
-      }
-    }
-    
+  console.log("Received data:", data); // Важно для отладки
+  
+  // Уличные данные
+  if (data.outdoor) {
+    setValue('out-temp', data.outdoor.temp, '°C');
+    setValue('out-hum', data.outdoor.hum, '%');
+    setValue('out-pres', data.outdoor.pres, ' hPa');
+    setValue('out-wind', data.outdoor.wind, ' м/с');
+    setTime('out-time', data.outdoor.updated);
+  }
+
+  // Комнатные данные
+  if (data.indoor) {
+    setValue('in-temp', data.indoor.temp, '°C');
+    setValue('in-hum', data.indoor.hum, '%');
+    setTime('in-time', data.indoor.updated);
+  }
+}
+
+function setValue(elementId, value, unit) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.textContent = value !== null ? value.toFixed(1) + unit : '--';
+  } else {
+    console.error("Element not found:", elementId);
+  }
+}
+
+function setTime(elementId, timestamp) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.textContent = timestamp ? `Обновлено: ${formatTime(timestamp)}` : '';
+  }
+}
     // Форматирование времени
     function formatTime(timestamp) {
       const date = new Date(timestamp);
