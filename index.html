@@ -33,6 +33,12 @@
     .temp { color: #e53935; }
     .hum { color: #1e88e5; }
     .pres { color: #43a047; }
+    .update-time {
+      text-align: center;
+      font-size: 13px;
+      color: #888;
+      margin-top: 15px;
+    }
   </style>
 </head>
 <body>
@@ -51,11 +57,25 @@
         <span id="pres-value" class="data-value pres">--</span>
       </div>
     </div>
+    <div id="update-time" class="update-time"></div>
   </div>
 
   <script>
-    const API_URL = 'https://weth-esp.matvejkotenko87.workers.dev/api/data';
-    const UPDATE_INTERVAL =60000;
+    const API_URL = 'https://your-worker.workers.dev/api/data';
+    const UPDATE_INTERVAL = 30000;
+
+    function formatTime(dateString) {
+      if (!dateString) return 'ещё не обновлялись';
+      const date = new Date(dateString);
+      return date.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
 
     // Загружаем сохранённые данные сразу
     const savedData = localStorage.getItem('sensorData');
@@ -63,11 +83,13 @@
       updateDisplay(JSON.parse(savedData));
     }
 
-    // Функция обновления данных
     async function updateSensorData() {
       try {
         const response = await fetch(API_URL);
         const data = await response.json();
+        
+        // Добавляем локальное время получения
+        data.localReceivedTime = new Date().toISOString();
         
         localStorage.setItem('sensorData', JSON.stringify(data));
         updateDisplay(data);
@@ -76,14 +98,24 @@
       }
     }
 
-    // Функция отображения
     function updateDisplay(data) {
+      // Обновляем значения датчиков
       document.getElementById('temp-value').textContent = 
-        data.temperature !== null ? data.temperature.toFixed(1) + '°C' : '--';
+        data.temperature !== null ? data.temperature.toFixed(1) + ' °C' : '--';
       document.getElementById('hum-value').textContent = 
-        data.humidity !== null ? data.humidity.toFixed(1) + '%' : '--';
+        data.humidity !== null ? data.humidity.toFixed(1) + ' %' : '--';
       document.getElementById('pres-value').textContent = 
-        data.pressure !== null ? data.pressure.toFixed(0) + 'hPa' : '--';
+        data.pressure !== null ? data.pressure.toFixed(0) + ' мм.рт.ст' : '--';
+      
+      // Обновляем время
+      const timeElement = document.getElementById('update-time');
+      if (data.lastUpdated) {
+        timeElement.textContent = `Данные получены: ${formatTime(data.lastUpdated)} (обновлено ${formatTime(data.localReceivedTime)})`;
+      } else if (data.localReceivedTime) {
+        timeElement.textContent = `Локальные данные: ${formatTime(data.localReceivedTime)}`;
+      } else {
+        timeElement.textContent = 'Данные не получены';
+      }
     }
 
     // Первое обновление и интервал
