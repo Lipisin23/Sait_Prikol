@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8"> 
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Метеостанция ESP8266</title>
+  <!-- Иконка для вкладки -->
+ 
   <style>
     :root {
       --outdoor-color: #4285F4;
@@ -88,14 +91,6 @@
       margin: 15px 0;
     }
     
-    .update-time {
-      font-size: 12px;
-      color: var(--text-light);
-      text-align: right;
-      margin-top: 10px;
-      font-style: italic;
-    }
-    
     @media (max-width: 480px) {
       .sensor-card {
         padding: 15px;
@@ -122,8 +117,6 @@
         <span class="sensor-label">Состояние</span>
         <span id="weather-text" class="sensor-value weather-value">--</span>
       </div>
-      
-      <div id="weather-time" class="update-time"></div>
     </div>
     
     <!-- Уличные датчики -->
@@ -152,8 +145,6 @@
         <span class="sensor-label">Скорость ветра</span>
         <span id="out-wind" class="sensor-value wind-value">-- м/с</span>
       </div>
-      
-      <div id="out-time" class="update-time"></div>
     </div>
     
     <!-- Комнатные датчики -->
@@ -172,8 +163,6 @@
         <span class="sensor-label">Влажность</span>
         <span id="in-hum" class="sensor-value hum-value">--</span>
       </div>
-      
-      <div id="in-time" class="update-time"></div>
     </div>
   </div>
 
@@ -185,12 +174,12 @@
     // Инициализация Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCzX29wtGTvSM5slyqqdGtpcbeZUzUjfrU",
-  authDomain: "weather-station-dce51.firebaseapp.com",
-  databaseURL: "https://weather-station-dce51-default-rtdb.firebaseio.com",
-  projectId: "weather-station-dce51",
-  storageBucket: "weather-station-dce51.firebasestorage.app",
-  messagingSenderId: "853096112287",
-  appId: "1:853096112287:web:fb5e84c9ff5f9f24cf02aa",
+      authDomain: "weather-station-dce51.firebaseapp.com",
+      databaseURL: "https://weather-station-dce51-default-rtdb.firebaseio.com",
+      projectId: "weather-station-dce51",
+      storageBucket: "weather-station-dce51.firebasestorage.app",
+      messagingSenderId: "853096112287",
+      appId: "1:853096112287:web:fb5e84c9ff5f9f24cf02aa"
     };
     
     firebase.initializeApp(firebaseConfig);
@@ -215,22 +204,28 @@
       });
     }
 
-    // Обновление интерфейса
+    // Обновление интерфейса с целочисленными значениями
     function updateDisplay(data) {
       console.log("New data:", data);
       
-      // Уличные данные
+      // Уличные данные (целые числа)
       if (data.outdoor) {
-        updateValue('out-temp', data.outdoor.temp, '°C');
-        updateValue('out-hum', data.outdoor.hum, '%');
-        updateValue('out-pres', data.outdoor.pres, 'hPa');
-        updateValue('out-wind', data.outdoor.wind, 'м/с');
+        document.getElementById('out-temp').textContent = 
+          data.outdoor.temp !== null ? Math.round(data.outdoor.temp) + '°C' : '--';
+        document.getElementById('out-hum').textContent = 
+          data.outdoor.hum !== null ? Math.round(data.outdoor.hum) + '%' : '--';
+        document.getElementById('out-pres').textContent = 
+          data.outdoor.pres !== null ? Math.round(data.outdoor.pres) + ' hPa' : '--';
+        document.getElementById('out-wind').textContent = 
+          data.outdoor.wind !== null ? Math.round(data.outdoor.wind) + ' м/с' : '--';
       }
       
-      // Комнатные данные
+      // Комнатные данные (целые числа)
       if (data.indoor) {
-        updateValue('in-temp', data.indoor.temp, '°C');
-        updateValue('in-hum', data.indoor.hum, '%');
+        document.getElementById('in-temp').textContent = 
+          data.indoor.temp !== null ? Math.round(data.indoor.temp) + '°C' : '--';
+        document.getElementById('in-hum').textContent = 
+          data.indoor.hum !== null ? Math.round(data.indoor.hum) + '%' : '--';
       }
       
       // Погода
@@ -239,22 +234,6 @@
         document.getElementById('weather-text').textContent = weatherText;
         document.getElementById('weather-icon').textContent = 
           WEATHER_ICONS[weatherText.toLowerCase()] || '❓';
-      }
-      
-      // Время обновления
-      if (data.last_updated) {
-        const date = new Date(data.last_updated * 1000);
-        const timeString = date.toLocaleTimeString('ru-RU');
-        document.querySelectorAll('.update-time').forEach(el => {
-          el.textContent = `Обновлено: ${timeString}`;
-        });
-      }
-    }
-    
-    function updateValue(elementId, value, unit) {
-      const element = document.getElementById(elementId);
-      if (element && value !== null && value !== undefined) {
-        element.textContent = value.toFixed(1) + (unit || '');
       }
     }
 
