@@ -110,7 +110,7 @@
       // Обновляем время
       const timeElement = document.getElementById('update-time');
       if (data.lastUpdated) {
-        timeElement.textContent = `Данные получены: ${formatTime(data.lastUpdated)} (обновлено ${formatTime(data.localReceivedTime)})`;
+        timeElement.textContent = `Данные получены: ${formatTime(data.lastUpdated)}`;
       } else if (data.localReceivedTime) {
         timeElement.textContent = `Локальные данные: ${formatTime(data.localReceivedTime)}`;
       } else {
