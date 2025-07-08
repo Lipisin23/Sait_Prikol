@@ -1,116 +1,65 @@
-const ctx = document.getElementById('data-chart').getContext('2d');
-const chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [
-            {
-                label: 'Температура (°C)',
-                data: [],
-                borderColor: 'rgba(255, 99, 132, 1)',
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                tension: 0.1
-            },
-            {
-                label: 'Влажность (%)',
-                data: [],
-                borderColor: 'rgba(54, 162, 235, 1)',
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                tension: 0.1
-            },
-            {
-                label: 'Давление (hPa)',
-                data: [],
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                tension: 0.1,
-                yAxisID: 'y1'
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: false,
-                title: {
-                    display: true,
-                    text: 'Температура/Влажность'
-                }
-            },
-            y1: {
-                position: 'right',
-                beginAtZero: false,
-                title: {
-                    display: true,
-                    text: 'Давление'
-                },
-                grid: {
-                    drawOnChartArea: false
-                }
-            }
-        }
-    }
-});
+const API_URL = 'https://weth-esp.matvejkotenko87.workers.dev/api/data';
 
-// Ссылка на данные в Firebase
-const dataRef = database.ref('sensorData');
-
-// Обработчик изменений данных
-dataRef.limitToLast(20).on('value', (snapshot) => {
-    const dataHistory = [];
-    snapshot.forEach((childSnapshot) => {
-        const data = childSnapshot.val();
-        dataHistory.push({
-            timestamp: data.timestamp || childSnapshot.key,
-            temperature: parseFloat(data.temperature),
-            humidity: parseFloat(data.humidity),
-            pressure: parseFloat(data.pressure)
-        });
-    });
+async function fetchData() {
+  try {
+    // Показываем состояние загрузки
+    document.getElementById('data').classList.add('updating');
     
-    // Сортируем по времени (от новых к старым)
-    dataHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const response = await fetch(API_URL);
+    const data = await response.json();
     
-    if (dataHistory.length > 0) {
-        updateDashboard(dataHistory[0]);
-        updateChart(dataHistory);
-        updateTable(dataHistory);
-    }
-});
-
-function updateDashboard(latestData) {
-    document.getElementById('temperature').textContent = latestData.temperature.toFixed(1);
-    document.getElementById('humidity').textContent = latestData.humidity.toFixed(1);
-    document.getElementById('pressure').textContent = latestData.pressure.toFixed(0);
-    document.getElementById('last-update').textContent = new Date(latestData.timestamp).toLocaleString();
+    updateDisplay(data);
+  } catch (error) {
+    console.error('Ошибка:', error);
+    document.getElementById('updated').textContent = 'Ошибка при обновлении';
+    document.getElementById('updated').style.color = 'var(--error-color)';
+  } finally {
+    document.getElementById('data').classList.remove('updating');
+  }
 }
 
-function updateChart(dataHistory) {
-    const labels = dataHistory.map(item => new Date(item.timestamp).toLocaleTimeString()).reverse();
-    const tempData = dataHistory.map(item => item.temperature).reverse();
-    const humData = dataHistory.map(item => item.humidity).reverse();
-    const pressData = dataHistory.map(item => item.pressure).reverse();
-    
-    chart.data.labels = labels;
-    chart.data.datasets[0].data = tempData;
-    chart.data.datasets[1].data = humData;
-    chart.data.datasets[2].data = pressData;
-    chart.update();
+function updateDisplay(data) {
+  const tempElem = document.getElementById('temp');
+  const humElem = document.getElementById('hum');
+  const presElem = document.getElementById('pres');
+  const updatedElem = document.getElementById('updated');
+  
+  if (data.temperature !== null) {
+    tempElem.textContent = data.temperature.toFixed(1);
+    tempElem.className = 'data-value temperature-value';
+  } else {
+    tempElem.textContent = '--';
+    tempElem.className = 'data-value';
+  }
+  
+  if (data.humidity !== null) {
+    humElem.textContent = data.humidity.toFixed(1);
+    humElem.className = 'data-value humidity-value';
+  } else {
+    humElem.textContent = '--';
+    humElem.className = 'data-value';
+  }
+  
+  if (data.pressure !== null) {
+    presElem.textContent = data.pressure.toFixed(1);
+    presElem.className = 'data-value pressure-value';
+  } else {
+    presElem.textContent = '--';
+    presElem.className = 'data-value';
+  }
+  
+  if (data.lastUpdated) {
+    const date = new Date(data.lastUpdated);
+    updatedElem.textContent = date.toLocaleString();
+    updatedElem.style.color = 'var(--success-color)';
+  } else {
+    updatedElem.textContent = 'Данные не получены';
+    updatedElem.style.color = 'var(--text-light)';
+  }
 }
 
-function updateTable(dataHistory) {
-    const tableBody = document.querySelector('#data-history tbody');
-    tableBody.innerHTML = '';
-    
-    dataHistory.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${new Date(item.timestamp).toLocaleString()}</td>
-            <td>${item.temperature.toFixed(1)} °C</td>
-            <td>${item.humidity.toFixed(1)} %</td>
-            <td>${item.pressure.toFixed(0)} hPa</td>
-        `;
-        tableBody.appendChild(row);
-    });
-}
+// Первый запрос сразу
+fetchData();
+
+// Затем каждые 10 секунд
+setInterval(fetchData, 10000);
