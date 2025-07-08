@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Данные с ESP8266</title>
+  <title>Данные с датчиков ESP8266</title>
   <style>
-    .data-container { 
+    body {
       font-family: Arial, sans-serif;
       max-width: 600px;
       margin: 0 auto;
@@ -11,69 +11,74 @@
     }
     .data-item {
       margin: 15px 0;
-      padding: 10px;
-      background: #f5f5f5;
-      border-radius: 5px;
+      padding: 15px;
+      background: #f0f8ff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .value {
       font-weight: bold;
-      color: #2c82c9;
+      color: #2c3e50;
     }
     .timestamp {
-      color: #666;
+      color: #7f8c8d;
       font-size: 0.9em;
     }
-    .error {
-      color: #e74c3c;
+    .last-updated {
+      margin-top: 20px;
+      font-style: italic;
     }
   </style>
 </head>
 <body>
-  <div class="data-container">
-    <h1>Данные с датчиков</h1>
-    <div id="sensor-data">
-      <!-- Данные будут здесь -->
-    </div>
+  <h1>Данные с датчиков</h1>
+  <div id="sensor-data">
+    <!-- Данные загружаются здесь -->
   </div>
+  <p class="last-updated" id="update-info"></p>
 
   <script>
+    // Конфигурация
     const API_URL = 'https://weth-esp.matvejkotenko87.workers.dev/api/data';
+    const UPDATE_INTERVAL = 30000; // 30 секунд
+
+    // Элементы DOM
     const dataContainer = document.getElementById('sensor-data');
+    const updateInfo = document.getElementById('update-info');
 
-    // Функция для форматирования даты
-    function formatDate(isoString) {
-      if (!isoString) return 'неизвестно';
-      const date = new Date(isoString);
-      return date.toLocaleString();
-    }
-
-    // Получение данных
-    async function fetchData() {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Ошибка сети');
-        
-        const data = await response.json();
-        updateUI(data);
-        
-        // Сохраняем данные в localStorage
-        localStorage.setItem('lastSensorData', JSON.stringify(data));
-      } catch (error) {
-        console.error('Ошибка:', error);
-        
-        // Пробуем взять данные из кеша
-        const cachedData = localStorage.getItem('lastSensorData');
-        if (cachedData) {
-          updateUI(JSON.parse(cachedData));
-          dataContainer.innerHTML += `<p class="error">Используются кешированные данные (${formatDate(JSON.parse(cachedData).lastUpdated)})</p>`;
-        } else {
-          dataContainer.innerHTML = `<p class="error">Не удалось загрузить данные: ${error.message}</p>`;
-        }
+    // 1. При загрузке страницы — показываем сохранённые данные из localStorage
+    function loadInitialData() {
+      const savedData = localStorage.getItem('sensorData');
+      if (savedData) {
+        displayData(JSON.parse(savedData));
+        updateInfo.textContent = `Локальные данные (обновление через ${UPDATE_INTERVAL/1000} сек)`;
+      } else {
+        dataContainer.innerHTML = '<p>Загрузка данных...</p>';
       }
     }
 
-    // Обновление интерфейса
-    function updateUI(data) {
+    // 2. Функция для запроса новых данных
+    async function fetchNewData() {
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Ошибка сервера');
+        
+        const data = await response.json();
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('sensorData', JSON.stringify(data));
+        
+        // Обновляем интерфейс
+        displayData(data);
+        updateInfo.textContent = `Данные обновлены: ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        console.error('Ошибка:', error);
+        updateInfo.textContent = `Ошибка обновления: ${error.message}`;
+      }
+    }
+
+    // 3. Отображение данных
+    function displayData(data) {
       dataContainer.innerHTML = `
         <div class="data-item">
           Температура: <span class="value">${data.temperature !== null ? data.temperature + ' °C' : '--'}</span>
@@ -84,15 +89,15 @@
         <div class="data-item">
           Давление: <span class="value">${data.pressure !== null ? data.pressure + ' hPa' : '--'}</span>
         </div>
-        <div class="timestamp">
-          Обновлено: ${formatDate(data.lastUpdated)}
-        </div>
       `;
     }
 
-    // Загружаем данные сразу и каждые 30 секунд
-    fetchData();
-    setInterval(fetchData, 30000);
+    // Инициализация
+    loadInitialData(); // Показываем сохранённые данные сразу
+    fetchNewData();    // Первый запрос новых данных
+
+    // Автообновление каждые 30 сек
+    setInterval(fetchNewData, UPDATE_INTERVAL);
   </script>
 </body>
 </html>
