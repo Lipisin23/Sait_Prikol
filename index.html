@@ -113,7 +113,7 @@
     <div class="sensor-card outdoor">
       <div class="card-header outdoor">
         <div class="card-header-icon"></div>
-        <span>Уличные датчики</span>
+        <span>Улица</span>
       </div>
       
       <div class="sensor-row">
@@ -143,7 +143,7 @@
     <div class="sensor-card indoor">
       <div class="card-header indoor">
         <div class="card-header-icon"></div>
-        <span>Комнатные датчики</span>
+        <span>Помещение</span>
       </div>
       
       <div class="sensor-row">
@@ -187,7 +187,7 @@
       if (cachedData) {
         updateDisplay(JSON.parse(cachedData));
         document.querySelectorAll('.update-time').forEach(el => {
-          el.textContent += ' (кеш)';
+          el.textContent += '';
         });
       }
     }
@@ -200,15 +200,15 @@
   if (data.outdoor) {
     setValue('out-temp', data.outdoor.temp, '°C');
     setValue('out-hum', data.outdoor.hum, '%');
-    setValue('out-pres', data.outdoor.pres, ' hPa');
+    setValue('out-pres', data.outdoor.pres, ' мм.рт.ст');
     setValue('out-wind', data.outdoor.wind, ' м/с');
     setTime('out-time', data.outdoor.updated);
   }
 
   // Комнатные данные
   if (data.indoor) {
-    setValue('in-temp', data.indoor.temp, '°C');
-    setValue('in-hum', data.indoor.hum, '%');
+    setValue('in-temp', data.indoor.temp, ' °C');
+    setValue('in-hum', data.indoor.hum, ' %');
     setTime('in-time', data.indoor.updated);
   }
 }
