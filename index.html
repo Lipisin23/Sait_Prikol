@@ -1,182 +1,250 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Метеостанция</title>
+  <title>Метеостанция - Улица и Помещение</title>
   <style>
+    :root {
+      --outdoor-color: #4285F4;
+      --indoor-color: #EA4335;
+      --card-bg: #ffffff;
+      --text-dark: #333333;
+      --text-light: #666666;
+    }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 100%;
+      font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
       margin: 0;
       padding: 15px;
-      background: #f5f5f5;
+      background: #f5f7fa;
+      color: var(--text-dark);
     }
-    .sensor-group {
-      background: white;
+    
+    .dashboard {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .sensor-card {
+      background: var(--card-bg);
       border-radius: 12px;
-      padding: 15px;
-      margin-bottom: 15px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .group-title {
-      font-size: 18px;
-      font-weight: 500;
-      margin-bottom: 12px;
-      color: #333;
+    
+    .card-header {
       display: flex;
       align-items: center;
+      margin-bottom: 15px;
+      font-weight: 600;
     }
-    .group-title:before {
-      content: "";
-      display: inline-block;
-      width: 12px;
-      height: 12px;
+    
+    .card-header.outdoor {
+      color: var(--outdoor-color);
+    }
+    
+    .card-header.indoor {
+      color: var(--indoor-color);
+    }
+    
+    .card-header-icon {
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
-      margin-right: 8px;
+      margin-right: 10px;
     }
-    .outdoor:before { background: #4285F4; }
-    .indoor:before { background: #EA4335; }
-    .data-row {
+    
+    .outdoor .card-header-icon {
+      background: var(--outdoor-color);
+    }
+    
+    .indoor .card-header-icon {
+      background: var(--indoor-color);
+    }
+    
+    .sensor-row {
       display: flex;
       justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #eee;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
     }
-    .data-row:last-child {
+    
+    .sensor-row:last-child {
       border-bottom: none;
     }
-    .data-label {
-      color: #666;
+    
+    .sensor-label {
+      color: var(--text-light);
     }
-    .data-value {
+    
+    .sensor-value {
       font-weight: 500;
     }
-    .temp { color: #e53935; }
-    .hum { color: #1e88e5; }
-    .pres { color: #43a047; }
-    .wind { color: #7b1fa2; }
+    
+    .temp-value { color: #e53935; }
+    .hum-value { color: #1e88e5; }
+    .pres-value { color: #43a047; }
+    .wind-value { color: #7b1fa2; }
+    
     .update-time {
-      text-align: center;
       font-size: 12px;
-      color: #888;
+      color: var(--text-light);
+      text-align: right;
       margin-top: 10px;
+      font-style: italic;
+    }
+    
+    @media (max-width: 480px) {
+      .sensor-card {
+        padding: 15px;
+      }
+      
+      .sensor-row {
+        padding: 10px 0;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="sensor-data">
+  <div class="dashboard">
     <!-- Уличные датчики -->
-    <div class="sensor-group">
-      <div class="group-title outdoor">Улица</div>
-      <div class="data-row">
-        <span class="data-label">Температура</span>
-        <span id="out-temp" class="data-value temp">--</span>
+    <div class="sensor-card outdoor">
+      <div class="card-header outdoor">
+        <div class="card-header-icon"></div>
+        <span>Уличные датчики</span>
       </div>
-      <div class="data-row">
-        <span class="data-label">Влажность</span>
-        <span id="out-hum" class="data-value hum">--</span>
+      
+      <div class="sensor-row">
+        <span class="sensor-label">Температура</span>
+        <span id="out-temp" class="sensor-value temp-value">--</span>
       </div>
-      <div class="data-row">
-        <span class="data-label">Давление</span>
-        <span id="out-pres" class="data-value pres">--</span>
+      
+      <div class="sensor-row">
+        <span class="sensor-label">Влажность</span>
+        <span id="out-hum" class="sensor-value hum-value">--</span>
       </div>
-      <div class="data-row">
-        <span class="data-label">Скорость ветра</span>
-        <span id="out-wind" class="data-value wind">--</span>
+      
+      <div class="sensor-row">
+        <span class="sensor-label">Давление</span>
+        <span id="out-pres" class="sensor-value pres-value">-- hPa</span>
       </div>
+      
+      <div class="sensor-row">
+        <span class="sensor-label">Скорость ветра</span>
+        <span id="out-wind" class="sensor-value wind-value">-- м/с</span>
+      </div>
+      
       <div id="out-time" class="update-time"></div>
     </div>
-
-    <!-- Домашние датчики -->
-    <div class="sensor-group">
-      <div class="group-title indoor">Помещение</div>
-      <div class="data-row">
-        <span class="data-label">Температура</span>
-        <span id="in-temp" class="data-value temp">--</span>
+    
+    <!-- Комнатные датчики -->
+    <div class="sensor-card indoor">
+      <div class="card-header indoor">
+        <div class="card-header-icon"></div>
+        <span>Комнатные датчики</span>
       </div>
-      <div class="data-row">
-        <span class="data-label">Влажность</span>
-        <span id="in-hum" class="data-value hum">--</span>
+      
+      <div class="sensor-row">
+        <span class="sensor-label">Температура</span>
+        <span id="in-temp" class="sensor-value temp-value">--</span>
       </div>
+      
+      <div class="sensor-row">
+        <span class="sensor-label">Влажность</span>
+        <span id="in-hum" class="sensor-value hum-value">--</span>
+      </div>
+      
       <div id="in-time" class="update-time"></div>
     </div>
   </div>
 
   <script>
     const API_URL = 'https://weth-esp.matvejkotenko87.workers.dev/api/data';
-    const UPDATE_INTERVAL = 30000;
-
-    function formatTime(dateString) {
-      if (!dateString) return 'ещё не обновлялись';
-      const date = new Date(dateString);
+    const UPDATE_INTERVAL = 30000; // 30 секунд
+    
+    // Загрузка данных
+    async function fetchData() {
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Ошибка сети');
+        
+        const data = await response.json();
+        updateDisplay(data);
+        
+        // Сохраняем данные в localStorage
+        localStorage.setItem('sensorData', JSON.stringify(data));
+      } catch (error) {
+        console.error('Ошибка:', error);
+        loadCachedData();
+      }
+    }
+    
+    // Загрузка сохранённых данных
+    function loadCachedData() {
+      const cachedData = localStorage.getItem('sensorData');
+      if (cachedData) {
+        updateDisplay(JSON.parse(cachedData));
+        document.querySelectorAll('.update-time').forEach(el => {
+          el.textContent += ' (кеш)';
+        });
+      }
+    }
+    
+    // Обновление интерфейса
+    function updateDisplay(data) {
+      // Уличные данные
+      if (data.outdoor) {
+        document.getElementById('out-temp').textContent = 
+          data.outdoor.temp !== null ? `${data.outdoor.temp.toFixed(1)}°C` : '--';
+        
+        document.getElementById('out-hum').textContent = 
+          data.outdoor.hum !== null ? `${data.outdoor.hum.toFixed(1)}%` : '--';
+        
+        document.getElementById('out-pres').textContent = 
+          data.outdoor.pres !== null ? `${data.outdoor.pres.toFixed(0)} hPa` : '--';
+        
+        document.getElementById('out-wind').textContent = 
+          data.outdoor.wind !== null ? `${data.outdoor.wind.toFixed(1)} м/с` : '--';
+        
+        if (data.outdoor.updated) {
+          document.getElementById('out-time').textContent = 
+            `Обновлено: ${formatTime(data.outdoor.updated)}`;
+        }
+      }
+      
+      // Комнатные данные
+      if (data.indoor) {
+        document.getElementById('in-temp').textContent = 
+          data.indoor.temp !== null ? `${data.indoor.temp.toFixed(1)}°C` : '--';
+        
+        document.getElementById('in-hum').textContent = 
+          data.indoor.hum !== null ? `${data.indoor.hum.toFixed(1)}%` : '--';
+        
+        if (data.indoor.updated) {
+          document.getElementById('in-time').textContent = 
+            `Обновлено: ${formatTime(data.indoor.updated)}`;
+        }
+      }
+    }
+    
+    // Форматирование времени
+    function formatTime(timestamp) {
+      const date = new Date(timestamp);
       return date.toLocaleString('ru-RU', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit'
       });
     }
-
-    // Загрузка сохранённых данных
-    const savedData = localStorage.getItem('sensorData');
-    if (savedData) {
-      updateDisplay(JSON.parse(savedData));
-    }
-
-    async function updateSensorData() {
-      try {
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        
-        // Добавляем время получения
-        data.receivedAt = new Date().toISOString();
-        
-        localStorage.setItem('sensorData', JSON.stringify(data));
-        updateDisplay(data);
-      } catch (error) {
-        console.log('Ошибка обновления:', error);
-      }
-    }
-
-    function updateDisplay(data) {
-      // Уличные датчики
-      if (data.outdoor) {
-        document.getElementById('out-temp').textContent = 
-          data.outdoor.temp !== null ? data.outdoor.temp.toFixed(1) + '°C' : '--';
-        document.getElementById('out-hum').textContent = 
-          data.outdoor.hum !== null ? data.outdoor.hum.toFixed(1) + '%' : '--';
-        document.getElementById('out-pres').textContent = 
-          data.outdoor.pres !== null ? data.outdoor.pres.toFixed(0) + ' hPa' : '--';
-        document.getElementById('out-wind').textContent = 
-          data.outdoor.wind !== null ? data.outdoor.wind.toFixed(1) + ' м/с' : '--';
-        document.getElementById('out-time').textContent = 
-          data.outdoor.updated ? `Обновлено: ${formatTime(data.outdoor.updated)}` : '';
-      }
-
-      // Домашние датчики
-      if (data.indoor) {
-        document.getElementById('in-temp').textContent = 
-          data.indoor.temp !== null ? data.indoor.temp.toFixed(1) + '°C' : '--';
-        document.getElementById('in-hum').textContent = 
-          data.indoor.hum !== null ? data.indoor.hum.toFixed(1) + '%' : '--';
-        document.getElementById('in-time').textContent = 
-          data.indoor.updated ? `Обновлено: ${formatTime(data.indoor.updated)}` : '';
-      }
-
-      // Общее время получения данных
-      if (data.receivedAt) {
-        const timeElements = document.querySelectorAll('.update-time');
-        timeElements.forEach(el => {
-          if (!el.textContent) {
-            el.textContent = `Данные получены: ${formatTime(data.receivedAt)}`;
-          }
-        });
-      }
-    }
-
-    // Первое обновление и интервал
-    updateSensorData();
-    setInterval(updateSensorData, UPDATE_INTERVAL);
+    
+    // Инициализация
+    loadCachedData(); // Сразу показываем кешированные данные
+    fetchData();      // Запрашиваем свежие данные
+    
+    // Автообновление
+    setInterval(fetchData, UPDATE_INTERVAL);
   </script>
 </body>
 </html>
