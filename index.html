@@ -1,103 +1,94 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Данные с датчиков ESP8266</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Данные датчиков</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .data-item {
-      margin: 15px 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 100%;
+      margin: 0;
       padding: 15px;
-      background: #f0f8ff;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: #f5f5f5;
     }
-    .value {
-      font-weight: bold;
-      color: #2c3e50;
+    .data-card {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    .timestamp {
-      color: #7f8c8d;
-      font-size: 0.9em;
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
     }
-    .last-updated {
-      margin-top: 20px;
-      font-style: italic;
+    .data-label {
+      color: #666;
     }
+    .data-value {
+      font-weight: 500;
+    }
+    .temp { color: #e53935; }
+    .hum { color: #1e88e5; }
+    .pres { color: #43a047; }
   </style>
 </head>
 <body>
-  <h1>Данные с датчиков</h1>
   <div id="sensor-data">
-    <!-- Данные загружаются здесь -->
+    <div class="data-card">
+      <div class="data-row">
+        <span class="data-label">Температура</span>
+        <span id="temp-value" class="data-value temp">--</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Влажность</span>
+        <span id="hum-value" class="data-value hum">--</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Давление</span>
+        <span id="pres-value" class="data-value pres">--</span>
+      </div>
+    </div>
   </div>
-  <p class="last-updated" id="update-info"></p>
 
   <script>
-    // Конфигурация
     const API_URL = 'https://weth-esp.matvejkotenko87.workers.dev/api/data';
-    const UPDATE_INTERVAL = 30000; // 30 секунд
+    const UPDATE_INTERVAL =60000;
 
-    // Элементы DOM
-    const dataContainer = document.getElementById('sensor-data');
-    const updateInfo = document.getElementById('update-info');
-
-    // 1. При загрузке страницы — показываем сохранённые данные из localStorage
-    function loadInitialData() {
-      const savedData = localStorage.getItem('sensorData');
-      if (savedData) {
-        displayData(JSON.parse(savedData));
-        updateInfo.textContent = `Локальные данные (обновление через ${UPDATE_INTERVAL/1000} сек)`;
-      } else {
-        dataContainer.innerHTML = '<p>Загрузка данных...</p>';
-      }
+    // Загружаем сохранённые данные сразу
+    const savedData = localStorage.getItem('sensorData');
+    if (savedData) {
+      updateDisplay(JSON.parse(savedData));
     }
 
-    // 2. Функция для запроса новых данных
-    async function fetchNewData() {
+    // Функция обновления данных
+    async function updateSensorData() {
       try {
         const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Ошибка сервера');
-        
         const data = await response.json();
         
-        // Сохраняем в localStorage
         localStorage.setItem('sensorData', JSON.stringify(data));
-        
-        // Обновляем интерфейс
-        displayData(data);
-        updateInfo.textContent = `Данные обновлены: ${new Date().toLocaleTimeString()}`;
+        updateDisplay(data);
       } catch (error) {
-        console.error('Ошибка:', error);
-        updateInfo.textContent = `Ошибка обновления: ${error.message}`;
+        console.log('Ошибка обновления:', error);
       }
     }
 
-    // 3. Отображение данных
-    function displayData(data) {
-      dataContainer.innerHTML = `
-        <div class="data-item">
-          Температура: <span class="value">${data.temperature !== null ? data.temperature + ' °C' : '--'}</span>
-        </div>
-        <div class="data-item">
-          Влажность: <span class="value">${data.humidity !== null ? data.humidity + ' %' : '--'}</span>
-        </div>
-        <div class="data-item">
-          Давление: <span class="value">${data.pressure !== null ? data.pressure + ' hPa' : '--'}</span>
-        </div>
-      `;
+    // Функция отображения
+    function updateDisplay(data) {
+      document.getElementById('temp-value').textContent = 
+        data.temperature !== null ? data.temperature.toFixed(1) + '°C' : '--';
+      document.getElementById('hum-value').textContent = 
+        data.humidity !== null ? data.humidity.toFixed(1) + '%' : '--';
+      document.getElementById('pres-value').textContent = 
+        data.pressure !== null ? data.pressure.toFixed(0) + 'hPa' : '--';
     }
 
-    // Инициализация
-    loadInitialData(); // Показываем сохранённые данные сразу
-    fetchNewData();    // Первый запрос новых данных
-
-    // Автообновление каждые 30 сек
-    setInterval(fetchNewData, UPDATE_INTERVAL);
+    // Первое обновление и интервал
+    updateSensorData();
+    setInterval(updateSensorData, UPDATE_INTERVAL);
   </script>
 </body>
 </html>
